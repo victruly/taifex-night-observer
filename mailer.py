@@ -35,6 +35,10 @@ class ReportMailer:
         foreign_val = chk['foreign_net']['val']
         foreign_color = "#e53e3e" if foreign_val > 0 else ("#38a169" if foreign_val < 0 else "#718096")
         foreign_sign = "+" if foreign_val > 0 else ""
+        
+        foreign_oi = f.get('foreign_net_oi', 0)
+        foreign_oi_color = "#e53e3e" if foreign_oi > 0 else ("#38a169" if foreign_oi < 0 else "#718096")
+        foreign_oi_sign = "+" if foreign_oi > 0 else ""
 
         html = f"""
 <!DOCTYPE html>
@@ -76,13 +80,6 @@ class ReportMailer:
             margin: 6px 0 0 0;
             font-size: 13px;
             color: #cbd5e0;
-        }}
-        .card {{
-            margin: 20px;
-            padding: 20px;
-            border-radius: 10px;
-            background-color: #f8fafc;
-            border-left: 6px solid #3182ce;
         }}
         .scenario-box {{
             background: #ffffff;
@@ -176,7 +173,7 @@ class ReportMailer:
                     <td><span class="badge {'badge-success' if chk['night_ratio']['pass'] else 'badge-warning'}">{ratio_badge}</span></td>
                 </tr>
                 <tr>
-                    <td><b>外資多空淨額</b></td>
+                    <td><b>夜盤外資多空淨額</b></td>
                     <td><b style="color:{foreign_color};">{foreign_sign}{foreign_val:,} 口</b></td>
                     <td>|淨額| &gt; 1000 口</td>
                     <td><span class="badge {'badge-success' if chk['foreign_net']['pass'] else 'badge-warning'}">{foreign_badge}</span></td>
@@ -188,12 +185,12 @@ class ReportMailer:
         </div>
 
         <div style="padding: 10px 20px 20px 20px;">
-            <h3 style="font-size: 16px; color: #2d3748; margin-bottom: 10px;">📈 夜盤與日盤詳細數據行情</h3>
+            <h3 style="font-size: 16px; color: #2d3748; margin-bottom: 10px;">📈 夜盤與籌碼詳細數據行情</h3>
             <table class="table">
                 <tr>
                     <th>指標名稱</th>
-                    <th>夜盤 (盤後)</th>
-                    <th>日盤 (一般)</th>
+                    <th>夜盤 (盤後交易)</th>
+                    <th>日盤 / 參考指標</th>
                 </tr>
                 <tr>
                     <td><b>台指期近月成交量</b></td>
@@ -210,8 +207,14 @@ class ReportMailer:
                     <td><b style="color: {chg_color};">{chg_sign}{chg:.0f} pts ({chg_sign}{m.get('night_change_pct', 0.0)}%)</b></td>
                 </tr>
                 <tr>
-                    <td><b>外資未平倉淨部位</b></td>
-                    <td colspan="2"><b style="color: {foreign_color};">{foreign_sign}{f.get('foreign_net_oi', 0):,} 口</b></td>
+                    <td><b>外資夜盤多空淨額</b></td>
+                    <td><b style="color: {foreign_color};">{foreign_sign}{foreign_val:,} 口</b></td>
+                    <td>期交所 futContractsDateAh 數據</td>
+                </tr>
+                <tr>
+                    <td><b>全日外資未平倉淨部位</b></td>
+                    <td><b style="color: {foreign_oi_color};">{foreign_oi_sign}{foreign_oi:,} 口</b></td>
+                    <td>全日累積 OI 參考</td>
                 </tr>
             </table>
         </div>
@@ -237,7 +240,6 @@ class ReportMailer:
         if not self.username or not self.password or not self.receiver:
             print("❌ [Mailer] SMTP 憑證缺失或未成功讀取，跳過郵件發送。請檢查 GitHub Repository Secrets 設定。")
             return False
-
             
         try:
             msg = MIMEMultipart("alternative")

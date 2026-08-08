@@ -70,17 +70,11 @@ class TAIFEXFetcher:
                 clean = [c for c in clean if c]
                 
                 if len(clean) >= 9 and clean[0] == 'TX':
-                    # clean[1]: 到期月份 (如 202608)
-                    # clean[5]: 最後成交價
-                    # clean[6]: 漲跌價
-                    # clean[7]: 漲跌%
-                    # clean[8] 或 clean[9]: 成交量 / 結算價
                     try:
                         price_str = clean[5].replace(',', '')
                         chg_str = clean[6].replace('▲', '').replace('▼', '').replace(',', '')
                         chg_pct_str = clean[7].replace('▲', '').replace('▼', '').replace('%', '').replace(',', '')
                         
-                        # 成交量及結算價 Parsing
                         vol = 0
                         settle = 0
                         for val in clean[8:]:
@@ -94,7 +88,6 @@ class TAIFEXFetcher:
                                     
                         total_volume += vol
                         
-                        # 近月第一筆 TX 記錄
                         if near_last_price == 0 and price_str.replace('.', '').isdigit():
                             near_last_price = float(price_str)
                             near_change = float(chg_str) if '▼' not in clean[6] else -float(chg_str)
@@ -147,41 +140,60 @@ class TAIFEXFetcher:
 
     def fetch_foreign_net_position(self):
         """
-        擷取期交所三大法人未沖銷部位 (futContractsDate) 外資多空淨額 (口數)
+        擷取期交所「盤後交易時段 (夜盤) 三大法人買賣超 (futContractsDateAh)」外資多空淨額 (口數)
+        以及「全日三大法人未平倉部位 (futContractsDate)」作為對照
         """
-        url = config.TAIFEX_MAJOR_INSTITUTIONS_URL
+        night_foreign_net = 0   # 專屬夜盤時段外資買賣超多空淨額 (口數)
+        foreign_net_oi = 0      # 全日結算外資未平倉多空淨額 (口數)
+        
+        # 1. 抓取夜盤三大法人 (futContractsDateAh) - 這是主要依據！
+        url_ah = "https://www.taifex.com.tw/cht/3/futContractsDateAh"
         try:
-            req = urllib.request.Request(url, headers=self.headers)
+            req = urllib.request.Request(url_ah, headers=self.headers)
             with urllib.request.urlopen(req, timeout=8) as resp:
-                html = resp.read().decode('utf-8', errors='ignore')
+                html_ah = resp.read().decode('utf-8', errors='ignore')
                 
-            foreign_net_oi = 0      # 未平倉多空淨額 (口數)
-            foreign_trade_net = 0   # 當日交易多空淨額 (口數)
-            
-            # 解析 TD/TR
-            for tr in re.findall(r'<tr[^>]*>(.*?)</tr>', html, re.DOTALL | re.IGNORECASE):
+            trs = re.findall(r'<tr[^>]*>(.*?)</tr>', html_ah, re.DOTALL | re.IGNORECASE)
+            for tr in trs:
                 tds = re.findall(r'<t[dh][^>]*>(.*?)</t[dh]>', tr, re.DOTALL | re.IGNORECASE)
                 clean = [re.sub(r'<[^>]+>|\s+', ' ', td).strip() for td in tds]
                 clean = [c for c in clean if c]
                 
-                # 台指期 TX 第一行列為外資時
-                if len(clean) >= 12 and '外資' in clean[0]:
-                    # clean[5]: 交易多空淨額口數
-                    # clean[11]: 未平倉多空淨額口數
+                # 第一筆外資即為「臺股期貨 (TX)」的夜盤外資買賣超
+                if len(clean) >= 7 and '外資' in clean[0]:
                     try:
-                        trade_net_str = clean[5].replace(',', '')
+                        net_str = clean[5].replace(',', '')
+                        night_foreign_net = int(net_str)
+                        break
+                    except Exception:
+                        pass
+        except Exception as e:
+            print("[Fetcher] Query night foreign position (futContractsDateAh) error:", e)
+
+        # 2. 抓取全日三大法人 (futContractsDate) 作為補充
+        url_date = "https://www.taifex.com.tw/cht/3/futContractsDate"
+        try:
+            req = urllib.request.Request(url_date, headers=self.headers)
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                html_date = resp.read().decode('utf-8', errors='ignore')
+                
+            trs = re.findall(r'<tr[^>]*>(.*?)</tr>', html_date, re.DOTALL | re.IGNORECASE)
+            for tr in trs:
+                tds = re.findall(r'<t[dh][^>]*>(.*?)</t[dh]>', tr, re.DOTALL | re.IGNORECASE)
+                clean = [re.sub(r'<[^>]+>|\s+', ' ', td).strip() for td in tds]
+                clean = [c for c in clean if c]
+                
+                if len(clean) >= 12 and '外資' in clean[0]:
+                    try:
                         oi_net_str = clean[11].replace(',', '')
-                        
-                        foreign_trade_net = int(trade_net_str)
                         foreign_net_oi = int(oi_net_str)
                         break
                     except Exception:
                         pass
-                        
-            return {
-                'foreign_net_oi': foreign_net_oi,
-                'foreign_trade_net': foreign_trade_net
-            }
         except Exception as e:
-            print("[Fetcher] Query foreign net position error:", e)
-            return {'foreign_net_oi': 0, 'foreign_trade_net': 0}
+            print("[Fetcher] Query daily foreign net position error:", e)
+            
+        return {
+            'night_foreign_net': night_foreign_net,
+            'foreign_net_oi': foreign_net_oi
+        }

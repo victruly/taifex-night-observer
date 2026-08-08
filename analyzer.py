@@ -13,12 +13,12 @@ class MarketAnalyzer:
         night_ratio = self.market_data.get('tx_near_night_ratio', 0.0)
         night_change = self.market_data.get('night_change', 0.0)
         
-        # 優先使用未平倉多空淨額，若為 0 則參考當日交易淨額
-        foreign_net = self.foreign_data.get('foreign_net_oi', 0)
-        if foreign_net == 0:
-            foreign_net = self.foreign_data.get('foreign_trade_net', 0)
+        # 專屬夜盤外資多空淨額 (futContractsDateAh)
+        foreign_net = self.foreign_data.get('night_foreign_net', 0)
+        # 全日外資未平倉淨額作為參考
+        foreign_net_oi = self.foreign_data.get('foreign_net_oi', 0)
 
-        # 2. 三大參考價值條件檢測 (Threshold Checks)
+        # 2. 三大參考價值條件檢測 (Threshold Filters)
         cond_vol = night_vol > config.MIN_NIGHT_VOLUME
         cond_ratio = night_ratio > config.MIN_NIGHT_RATIO
         cond_foreign = abs(foreign_net) > config.MIN_FOREIGN_NET
@@ -47,25 +47,25 @@ class MarketAnalyzer:
             scenario_emoji = "🟢"
             opening_direction = "開盤上漲"
             intraday_trend = "後續持續上漲 (多頭強勢突破)"
-            description = "夜盤順勢收漲，且外資多空淨額站在多方，多頭氣勢強勁，開高後持續向上攻堅。"
+            description = "夜盤順勢收漲，且外資夜盤多空淨額站在多方，多頭氣勢強勁，開高後持續向上攻堅。"
         elif is_night_up and not is_foreign_positive:
             scenario_name = "開高走低"
             scenario_emoji = "🟡"
             opening_direction = "開盤上漲"
             intraday_trend = "後續拉回下跌 (開高誘多洗盤)"
-            description = "夜盤受國際市場帶動收漲，但外資籌碼偏空壓頂，開高後易逢高賣壓吐回，注意誘多洗盤。"
+            description = "夜盤受國際市場帶動收漲，但外資夜盤籌碼偏空壓頂，開高後易逢高賣壓吐回，注意誘多洗盤。"
         elif not is_night_up and not is_foreign_positive:
             scenario_name = "開低走低"
             scenario_emoji = "🔴"
             opening_direction = "開盤下跌"
             intraday_trend = "後續持續下跌 (空頭主導向下)"
-            description = "夜盤受壓收跌，且外資籌碼亦站在空方，空頭主導盤勢，開低後恐持續下探尋找支撐。"
+            description = "夜盤受壓收跌，且外資夜盤籌碼亦站在空方，空頭主導盤勢，開低後恐持續下探尋找支撐。"
         else: # not is_night_up and is_foreign_positive
             scenario_name = "開低走高"
             scenario_emoji = "🔵"
             opening_direction = "開盤下跌"
             intraday_trend = "後續拉回上漲 (開低誘空洗盤反彈)"
-            description = "夜盤跟隨國際拉回收跌，但外資籌碼偏多護盤，開低後易吸引買盤低接反彈，走開低走高行情。"
+            description = "夜盤跟隨國際拉回收跌，但外資夜盤籌碼偏多護盤，開低後易吸引買盤低接反彈，走開低走高行情。"
 
         return {
             'scenario_name': scenario_name,
