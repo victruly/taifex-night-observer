@@ -229,9 +229,15 @@ class ReportMailer:
         if not subject:
             subject = f"【夜盤觀測發報】{datetime.now().strftime('%Y/%m/%d')} 台指期夜盤與外資劇本分析"
             
+        print(f"[Mailer] 檢查 Secrets 變數狀態...")
+        print(f" -> MAIL_USERNAME: {'已設定 (' + self.username + ')' if self.username else '❌ 未設定 (空白)'}")
+        print(f" -> MAIL_PASSWORD: {'已設定 (****)' if self.password else '❌ 未設定 (空白)'}")
+        print(f" -> RECEIVER_EMAIL: {'已設定 (' + self.receiver + ')' if self.receiver else '❌ 未設定 (空白)'}")
+        
         if not self.username or not self.password or not self.receiver:
-            print("[Mailer] SMTP credentials missing. Skipping email sending.")
+            print("❌ [Mailer] SMTP 憑證缺失或未成功讀取，跳過郵件發送。請檢查 GitHub Repository Secrets 設定。")
             return False
+
             
         try:
             msg = MIMEMultipart("alternative")
