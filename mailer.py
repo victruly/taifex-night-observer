@@ -27,10 +27,13 @@ class ReportMailer:
         chg_color = "#e53e3e" if chg > 0 else ("#38a169" if chg < 0 else "#718096")
         chg_sign = "+" if chg > 0 else ""
         
-        # 門檻檢查 Badges
-        vol_badge = "✅ 通過 (>300口)" if chk['night_volume']['pass'] else f"⚠️ 未達標 ({chk['night_volume']['val']}口)"
-        ratio_badge = "✅ 通過 (>40%)" if chk['night_ratio']['pass'] else f"⚠️ 未達標 ({chk['night_ratio']['val']}%)"
-        foreign_badge = "✅ 通過 (|淨額|>1000)" if chk['foreign_net']['pass'] else f"⚠️ 未達標 ({chk['foreign_net']['val']}口)"
+        # 門檻檢查 Badges (夜盤漲跌價, 夜盤量佔比, 夜盤外資多空淨額)
+        chg_val = chk['night_change']['val']
+        chg_badge_text = f"{'+' if chg_val > 0 else ''}{chg_val:.0f} 點"
+        chg_badge = f"✅ 通過 (|漲跌|>300點)" if chk['night_change']['pass'] else f"⚠️ 未達標 ({chg_badge_text})"
+        
+        ratio_badge = f"✅ 通過 (>40%)" if chk['night_ratio']['pass'] else f"⚠️ 未達標 ({chk['night_ratio']['val']}%)"
+        foreign_badge = f"✅ 通過 (|淨額|>1000)" if chk['foreign_net']['pass'] else f"⚠️ 未達標 ({chk['foreign_net']['val']}口)"
         
         foreign_val = chk['foreign_net']['val']
         foreign_color = "#e53e3e" if foreign_val > 0 else ("#38a169" if foreign_val < 0 else "#718096")
@@ -161,10 +164,10 @@ class ReportMailer:
                     <th>狀態</th>
                 </tr>
                 <tr>
-                    <td><b>夜盤成交量</b></td>
-                    <td><b>{m.get('tx_near_night_volume', 0):,} 口</b></td>
-                    <td>&gt; 300 口</td>
-                    <td><span class="badge {'badge-success' if chk['night_volume']['pass'] else 'badge-warning'}">{vol_badge}</span></td>
+                    <td><b>夜盤漲跌價</b></td>
+                    <td><b style="color:{chg_color};">{chg_sign}{chg:.0f} 點 ({chg_sign}{m.get('night_change_pct', 0.0)}%)</b></td>
+                    <td>|漲跌| &gt; 300 點</td>
+                    <td><span class="badge {'badge-success' if chk['night_change']['pass'] else 'badge-warning'}">{chg_badge}</span></td>
                 </tr>
                 <tr>
                     <td><b>夜盤量佔比</b></td>
@@ -193,6 +196,11 @@ class ReportMailer:
                     <th>日盤 / 參考指標</th>
                 </tr>
                 <tr>
+                    <td><b>夜盤收盤價 / 漲跌價</b></td>
+                    <td><b>{m.get('night_last_price', 0):,.0f}</b></td>
+                    <td><b style="color: {chg_color};">{chg_sign}{chg:.0f} pts ({chg_sign}{m.get('night_change_pct', 0.0)}%)</b></td>
+                </tr>
+                <tr>
                     <td><b>台指期近月成交量</b></td>
                     <td><b>{m.get('tx_near_night_volume', 0):,}</b> 口</td>
                     <td>{m.get('tx_near_day_volume', 0):,} 口</td>
@@ -200,11 +208,6 @@ class ReportMailer:
                 <tr>
                     <td><b>夜盤量佔比 (近月)</b></td>
                     <td colspan="2"><b style="color: #2b6cb0;">{m.get('tx_near_night_ratio', 0.0)} %</b></td>
-                </tr>
-                <tr>
-                    <td><b>夜盤收盤價 / 漲跌</b></td>
-                    <td><b>{m.get('night_last_price', 0):,.0f}</b></td>
-                    <td><b style="color: {chg_color};">{chg_sign}{chg:.0f} pts ({chg_sign}{m.get('night_change_pct', 0.0)}%)</b></td>
                 </tr>
                 <tr>
                     <td><b>外資夜盤多空淨額</b></td>

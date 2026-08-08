@@ -17,9 +17,10 @@ def main():
     fetcher = TAIFEXFetcher()
     print("\n[Step 1] 抓取期交所夜盤與日盤行情...")
     market_data = fetcher.fetch_night_and_day_market()
+    print(f" -> 夜盤漲跌價: {market_data.get('night_change')} 點 ({market_data.get('night_change_pct')}%)")
     print(f" -> 夜盤成交量: {market_data.get('tx_near_night_volume')} 口")
     print(f" -> 夜盤量佔比: {market_data.get('tx_near_night_ratio')} %")
-    print(f" -> 夜盤漲跌: {market_data.get('night_change')} 點 ({market_data.get('night_change_pct')}%)")
+
 
     print("\n[Step 2] 抓取外資多空淨額 (盤後交易時段 futContractsDateAh)...")
     foreign_data = fetcher.fetch_foreign_net_position()

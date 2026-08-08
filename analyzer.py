@@ -11,20 +11,21 @@ class MarketAnalyzer:
         # 1. 基礎數據讀取
         night_vol = self.market_data.get('tx_near_night_volume', 0)
         night_ratio = self.market_data.get('tx_near_night_ratio', 0.0)
-        night_change = self.market_data.get('night_change', 0.0)
+        night_change = self.market_data.get('night_change', 0.0)  # 夜盤漲跌價 (點數)
         
         # 專屬夜盤外資多空淨額 (futContractsDateAh)
         foreign_net = self.foreign_data.get('night_foreign_net', 0)
-        # 全日外資未平倉淨額作為參考
-        foreign_net_oi = self.foreign_data.get('foreign_net_oi', 0)
 
         # 2. 三大參考價值條件檢測 (Threshold Filters)
-        cond_vol = night_vol > config.MIN_NIGHT_VOLUME
+        # 條件一：夜盤漲跌價絕對值 > 300 點
+        cond_change = abs(night_change) > config.MIN_NIGHT_CHANGE_ABS
+        # 條件二：夜盤量佔比 > 40%
         cond_ratio = night_ratio > config.MIN_NIGHT_RATIO
+        # 條件三：外資夜盤多空淨額絕對值 > 1000 口
         cond_foreign = abs(foreign_net) > config.MIN_FOREIGN_NET
 
         # 參考價值評級
-        valid_count = sum([cond_vol, cond_ratio, cond_foreign])
+        valid_count = sum([cond_change, cond_ratio, cond_foreign])
         if valid_count == 3:
             credibility_level = "高參考價值 (極具代表性)"
             credibility_badge = "HIGH"
@@ -76,7 +77,7 @@ class MarketAnalyzer:
             'credibility_level': credibility_level,
             'credibility_badge': credibility_badge,
             'threshold_checks': {
-                'night_volume': {'val': night_vol, 'target': config.MIN_NIGHT_VOLUME, 'pass': cond_vol},
+                'night_change': {'val': night_change, 'target': config.MIN_NIGHT_CHANGE_ABS, 'pass': cond_change},
                 'night_ratio': {'val': night_ratio, 'target': config.MIN_NIGHT_RATIO, 'pass': cond_ratio},
                 'foreign_net': {'val': foreign_net, 'target': config.MIN_FOREIGN_NET, 'pass': cond_foreign}
             },

@@ -5,13 +5,12 @@ try:
 except ImportError:
     pass
 
-
 # ==========================================
 # 參考價值門檻設定 (Threshold Filters)
 # ==========================================
-MIN_NIGHT_VOLUME = 300       # 夜盤成交量 > 300 口
+MIN_NIGHT_CHANGE_ABS = 300   # 夜盤漲跌價 (絕對值) > 300 點
 MIN_NIGHT_RATIO = 40.0       # 夜盤量佔比 > 40%
-MIN_FOREIGN_NET = 1000       # 外資多空淨額絕對值 > 1000 口
+MIN_FOREIGN_NET = 1000       # 夜盤外資多空淨額 (絕對值) > 1000 口
 
 # ==========================================
 # 郵件 SMTP 設定 (Email Configuration)
@@ -27,3 +26,4 @@ RECEIVER_EMAIL = os.getenv("RECEIVER_EMAIL", "")
 # ==========================================
 TAIFEX_DAILY_MARKET_URL = "https://www.taifex.com.tw/cht/3/futDailyMarketReport"
 TAIFEX_MAJOR_INSTITUTIONS_URL = "https://www.taifex.com.tw/cht/3/futContractsDate"
+TAIFEX_NIGHT_MAJOR_INSTITUTIONS_URL = "https://www.taifex.com.tw/cht/3/futContractsDateAh"
